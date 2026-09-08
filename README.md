@@ -5,9 +5,9 @@ The same 290-byte React source is built as an ESM library by:
 - Vite 8.1.5 with Rolldown 1.2.7
 - Vite 6.4.1 with Rollup 4.54.0
 
-Both builds target ES2018, externalize React and ReactDOM, use esbuild
-minification, and run the same Terser pass. Webpack 5.74 then consumes each
-library with production module concatenation enabled.
+Both builds target ES2018, externalize React and ReactDOM, and use esbuild
+minification. Webpack 5.74 then consumes each library with production module
+concatenation enabled.
 
 ## Run
 
@@ -77,6 +77,7 @@ dependencies of this fixture.
 | 15.0.0 | 5.90.0 | Pass |
 | 16.0.0 | 5.98.0 | Pass |
 
-Every failure above was the same generated-code failure:
-`ReferenceError: s is not defined`. The first tested passing release after the
-affected range is Next.js 14.2.0, which moved from Webpack 5.86 to 5.90.
+Every failure above was the same generated-code failure: an imported alias was
+left unbound and caused a `ReferenceError`. The first tested passing release
+after the affected range is Next.js 14.2.0, which moved from Webpack 5.86 to
+5.90.

@@ -4,7 +4,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import terser from "@rollup/plugin-terser";
 import { build as buildWithRolldown } from "vite";
 import { build as buildWithRollup } from "vite-rollup";
 import webpack from "webpack";
@@ -25,7 +24,6 @@ function config(name) {
       lib: { entry: source, formats: ["es"], fileName: () => "library.js" },
       rolldownOptions: {
         external: [/^react(?:\/.+)?$/, /^react-dom(?:\/.+)?$/],
-        plugins: [terser({ mangle: true })],
       },
     },
   };
@@ -65,7 +63,7 @@ const rolldown = await consumeWithWebpack("rolldown");
 const rollup = await consumeWithWebpack("rollup");
 
 assert.notEqual(rolldown.status, 0);
-assert.match(rolldown.stderr, /ReferenceError: s is not defined/);
+assert.match(rolldown.stderr, /ReferenceError: \w+ is not defined/);
 assert.equal(rollup.status, 0, rollup.stderr);
 
 console.log("Vite 8 / Rolldown -> Webpack 5.74: FAIL (unbound import)");
