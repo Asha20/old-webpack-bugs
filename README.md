@@ -6,8 +6,8 @@ The same small ESM source is built as a library by:
 - Vite 6.4.1 with Rollup 4.54.0
 
 Both builds target ES2018, externalize the same one-function local module, and
-use esbuild minification. Webpack 5.74 then consumes each library together with
-that module, using production module concatenation.
+use esbuild minification. Webpack 5.74 and 5.90 then consume each library
+together with that module, using production module concatenation.
 
 ## Run
 
@@ -19,13 +19,15 @@ pnpm test
 Expected output:
 
 ```text
-Vite 8 / Rolldown -> Webpack 5.74: FAIL (unbound import)
-Vite 6 / Rollup   -> Webpack 5.74: PASS
+                 Webpack 5.74  Webpack 5.90
+Vite 8 / Rolldown  FAIL          PASS
+Vite 6 / Rollup    PASS          PASS
 ```
 
 Webpack compiles both generated libraries successfully. Evaluating the bundle
-made from Rolldown's output then throws because the generated alias for the
-imported function is undefined; the bundle made from Rollup's output runs.
+With Webpack 5.74, evaluating the bundle made from Rolldown's output then throws
+because the generated alias for the imported function is undefined; the bundle
+made from Rollup's output runs. Webpack 5.90 runs both outputs successfully.
 
 The source combines the ingredients needed to retain the problematic output
 shape: a private field lowered for ES2018 and two calls to an imported function

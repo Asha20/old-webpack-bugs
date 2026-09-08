@@ -8,13 +8,13 @@
   "devDependencies": {
     "vite": "8.1.5",
     "vite-rollup": "npm:vite@6.4.1",
-    "webpack": "5.74.0"
+    "webpack5-74-0": "npm:webpack@5.74.0",
+    "webpack5-90-0": "npm:webpack@5.90.0"
   },
   "pnpm": {
     "overrides": {
       "rolldown": "1.2.7",
-      "rollup": "4.54.0",
-      "webpack": "5.74.0"
+      "rollup": "4.54.0"
     },
     "onlyBuiltDependencies": [
       "esbuild"
