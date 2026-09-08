@@ -1,13 +1,18 @@
 # Minimal Rolldown-versus-Rollup reproduction
 
-The same small ESM source is built as a library by:
+The same small, already-lowered ESM source is built directly by:
 
-- Vite 8.1.5 with Rolldown 1.2.7
-- Vite 6.4.1 with Rollup 4.54.0
+- Rolldown 1.2.7 with `topLevelVar: true`
+- Rollup 4.54.0
 
-Both builds target ES2018, externalize the same one-function local module, and
-use esbuild minification. Webpack 5.74 and 5.90 then consume each library
-together with that module, using production module concatenation.
+Both builds externalize the same one-function local module and run the same
+esbuild `renderChunk` pass. The esbuild options match Vite's ES-library
+minification behavior. Webpack 5.74 and 5.90 then consume each library together
+with the external module, using production module concatenation.
+
+Vite 8 sets `topLevelVar: true` when it invokes Rolldown. That option is the
+smallest isolated difference needed to reproduce the problematic output shape;
+direct Rolldown without it produces a bundle that Webpack 5.74 handles.
 
 ## Run
 
@@ -19,26 +24,26 @@ pnpm test
 Expected output:
 
 ```text
-                 Webpack 5.74  Webpack 5.90
-Vite 8 / Rolldown  FAIL          PASS
-Vite 6 / Rollup    PASS          PASS
+          Webpack 5.74  Webpack 5.90
+Rolldown  FAIL          PASS
+Rollup    PASS          PASS
 ```
 
-Webpack compiles both generated libraries successfully. Evaluating the bundle
 With Webpack 5.74, evaluating the bundle made from Rolldown's output then throws
 because the generated alias for the imported function is undefined; the bundle
 made from Rollup's output runs. Webpack 5.90 runs both outputs successfully.
 
 The source combines the ingredients needed to retain the problematic output
-shape: a private field lowered for ES2018 and two calls to an imported function
-in one declaration. Rolldown emits the import before the lowered helpers and
-keeps the calls in a comma-chained `var` statement. Webpack leaves the imported
-alias unbound while concatenating the modules. Rollup orders and deconflicts the
-same symbols differently, so Webpack handles its output correctly.
+shape: a lowered class-field helper and two calls to an imported function.
+Rolldown's `topLevelVar` output, after the shared esbuild pass, combines the
+storage, class, and calls into one comma-chained `var` statement. Webpack leaves
+the imported alias unbound while concatenating the modules. Rollup preserves
+separate declaration kinds, so esbuild does not create that chain and Webpack
+handles its output correctly.
 
 The two library builds are emitted beside the tracked files in `fixture/` as
-ignored `rolldown.js` and `rollup.js` files. Webpack output is written to the
-ignored `dist/` directory.
+ignored `rolldown-bundle.js` and `rollup-bundle.js` files. Webpack output is
+written to the ignored `dist/` directory.
 
 ## Impact
 

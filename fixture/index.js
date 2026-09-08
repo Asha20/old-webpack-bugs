@@ -1,8 +1,16 @@
 import { wrap } from "./external.js";
 
-class Handle {
-  #value;
+function initialize(instance, storage, value) {
+  storage.set(instance, value);
 }
 
-export const First = wrap(() => new Handle()),
-  Second = wrap(() => null);
+var storage = new WeakMap();
+var Handle = class {
+  constructor() {
+    initialize(this, storage, undefined);
+  }
+};
+const First = wrap(() => new Handle());
+const Second = wrap(() => null);
+
+export { First, Second };

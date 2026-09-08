@@ -3,8 +3,9 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { build as buildWithRolldown } from "vite";
-import { build as buildWithRollup } from "vite-rollup";
+import { transform } from "esbuild";
+import { rolldown } from "rolldown";
+import { rollup } from "rollup";
 import webpack574 from "webpack5-74-0";
 import webpack590 from "webpack5-90-0";
 
@@ -14,19 +15,34 @@ const source = path.join(fixture, "index.js");
 const dist = path.join(root, "dist");
 const external = ["./external.js"];
 
-function makeConfig(name, bundlerOptions) {
+function minifyPlugin() {
   return {
-    configFile: false,
-    logLevel: "silent",
-    build: {
-      outDir: fixture,
-      emptyOutDir: false,
-      target: "es2018",
-      minify: "esbuild",
-      lib: { entry: source, formats: ["es"], fileName: `${name}-bundle` },
-      ...bundlerOptions,
+    name: "shared-esbuild-minify",
+    async renderChunk(code) {
+      const result = await transform(code, {
+        format: "esm",
+        minifyIdentifiers: true,
+        minifySyntax: true,
+        minifyWhitespace: false,
+        treeShaking: true,
+      });
+      return { code: result.code };
     },
   };
+}
+
+async function build(bundler, name, outputOptions = {}) {
+  const bundle = await bundler({
+    input: source,
+    external,
+    plugins: [minifyPlugin()],
+  });
+  await bundle.write({
+    file: path.join(fixture, `${name}-bundle.js`),
+    format: "es",
+    ...outputOptions,
+  });
+  await bundle.close();
 }
 
 async function runWebpack(name, webpackVersion, webpack) {
@@ -50,13 +66,8 @@ async function runWebpack(name, webpackVersion, webpack) {
   });
 }
 
-const rolldownConfig = makeConfig("rolldown", {
-  rolldownOptions: { external },
-});
-const rollupConfig = makeConfig("rollup", { rollupOptions: { external } });
-
-await buildWithRolldown(rolldownConfig);
-await buildWithRollup(rollupConfig);
+await build(rolldown, "rolldown", { topLevelVar: true });
+await build(rollup, "rollup");
 
 const rolldownWebpack574 = await runWebpack("rolldown", "5.74.0", webpack574);
 const rollupWebpack574 = await runWebpack("rollup", "5.74.0", webpack574);
@@ -69,6 +80,6 @@ assert.equal(rollupWebpack574.status, 0, rollupWebpack574.stderr);
 assert.equal(rolldownWebpack590.status, 0, rolldownWebpack590.stderr);
 assert.equal(rollupWebpack590.status, 0, rollupWebpack590.stderr);
 
-console.log("                 Webpack 5.74  Webpack 5.90");
-console.log("Vite 8 / Rolldown  FAIL          PASS");
-console.log("Vite 6 / Rollup    PASS          PASS");
+console.log("          Webpack 5.74  Webpack 5.90");
+console.log("Rolldown  FAIL          PASS");
+console.log("Rollup    PASS          PASS");
