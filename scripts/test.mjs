@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,19 +8,21 @@ import { build as buildWithRollup } from "vite-rollup";
 import webpack from "webpack";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const source = path.join(root, "src", "index.js");
+const fixture = path.join(root, "fixture");
+const source = path.join(fixture, "index.js");
 const dist = path.join(root, "dist");
 const external = ["./external.js"];
 
-function config(name, bundlerOptions) {
+function makeConfig(name, bundlerOptions) {
   return {
     configFile: false,
     logLevel: "silent",
     build: {
-      outDir: path.join(dist, name),
+      outDir: fixture,
+      emptyOutDir: false,
       target: "es2018",
       minify: "esbuild",
-      lib: { entry: source, formats: ["es"], fileName: "library" },
+      lib: { entry: source, formats: ["es"], fileName: `${name}-bundle` },
       ...bundlerOptions,
     },
   };
@@ -29,19 +30,10 @@ function config(name, bundlerOptions) {
 
 async function consumeWithWebpack(name) {
   const directory = path.join(dist, name);
-  const entry = path.join(directory, "entry.js");
-  fs.copyFileSync(
-    path.join(root, "src", "external.js"),
-    path.join(directory, "external.js"),
-  );
-  fs.writeFileSync(
-    entry,
-    'import { Second } from "./library.js"; globalThis.Second = Second;\n',
-  );
   const compiler = webpack({
     mode: "production",
     target: "node",
-    entry,
+    entry: path.join(fixture, `${name}-bundle.js`),
     optimization: { minimize: false },
     output: { path: directory, filename: "main.cjs" },
   });
@@ -57,15 +49,20 @@ async function consumeWithWebpack(name) {
   });
 }
 
-await buildWithRolldown(config("rolldown", { rolldownOptions: { external } }));
-await buildWithRollup(config("rollup", { rollupOptions: { external } }));
+const rolldownConfig = makeConfig("rolldown", {
+  rolldownOptions: { external },
+});
+const rollupConfig = makeConfig("rollup", { rollupOptions: { external } });
 
-const rolldown = await consumeWithWebpack("rolldown");
-const rollup = await consumeWithWebpack("rollup");
+await buildWithRolldown(rolldownConfig);
+await buildWithRollup(rollupConfig);
 
-assert.notEqual(rolldown.status, 0);
-assert.match(rolldown.stderr, /ReferenceError: \w+ is not defined/);
-assert.equal(rollup.status, 0, rollup.stderr);
+const rolldownProcess = await consumeWithWebpack("rolldown");
+const rollupProcess = await consumeWithWebpack("rollup");
+
+assert.notEqual(rolldownProcess.status, 0);
+assert.match(rolldownProcess.stderr, /ReferenceError: \w+ is not defined/);
+assert.equal(rollupProcess.status, 0, rollupProcess.stderr);
 
 console.log("Vite 8 / Rolldown -> Webpack 5.74: FAIL (unbound import)");
 console.log("Vite 6 / Rollup   -> Webpack 5.74: PASS");

@@ -34,7 +34,9 @@ keeps the calls in a comma-chained `var` statement. Webpack leaves the imported
 alias unbound while concatenating the modules. Rollup orders and deconflicts the
 same symbols differently, so Webpack handles its output correctly.
 
-Generated output is written to `dist/` and is intentionally not checked in.
+The two library builds are emitted beside the tracked files in `fixture/` as
+ignored `rolldown.js` and `rollup.js` files. Webpack output is written to the
+ignored `dist/` directory.
 
 ## Impact
 
