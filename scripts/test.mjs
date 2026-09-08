@@ -15,17 +15,11 @@ const source = path.join(fixture, "index.js");
 const dist = path.join(root, "dist");
 const external = ["./external.js"];
 
-function minifyPlugin() {
+function mergeDeclarations() {
   return {
-    name: "shared-esbuild-minify",
+    name: "merge-declarations",
     async renderChunk(code) {
-      const result = await transform(code, {
-        format: "esm",
-        minifyIdentifiers: true,
-        minifySyntax: true,
-        minifyWhitespace: false,
-        treeShaking: true,
-      });
+      const result = await transform(code, { minifySyntax: true });
       return { code: result.code };
     },
   };
@@ -35,7 +29,7 @@ async function build(bundler, name, outputOptions = {}) {
   const bundle = await bundler({
     input: source,
     external,
-    plugins: [minifyPlugin()],
+    plugins: [mergeDeclarations()],
   });
   await bundle.write({
     file: path.join(fixture, `${name}-bundle.js`),

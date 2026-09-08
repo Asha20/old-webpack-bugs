@@ -6,9 +6,10 @@ The same small, already-lowered ESM source is built directly by:
 - Rollup 4.54.0
 
 Both builds externalize the same one-function local module and run the same
-esbuild `renderChunk` pass. The esbuild options match Vite's ES-library
-minification behavior. Webpack 5.74 and 5.90 then consume each library together
-with the external module, using production module concatenation.
+esbuild `renderChunk` pass with only `minifySyntax: true`. This is the smallest
+piece of Vite's ES-library minification behavior needed to expose the issue.
+Webpack 5.74 and 5.90 then consume each library together with the external
+module, using production module concatenation.
 
 Vite 8 sets `topLevelVar: true` when it invokes Rolldown. That option is the
 smallest isolated difference needed to reproduce the problematic output shape;
