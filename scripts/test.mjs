@@ -9,22 +9,20 @@ import { build as buildWithRollup } from "vite-rollup";
 import webpack from "webpack";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const source = path.join(root, "src", "index.jsx");
+const source = path.join(root, "src", "index.js");
 const dist = path.join(root, "dist");
+const external = ["./external.js"];
 
-function config(name) {
+function config(name, bundlerOptions) {
   return {
     configFile: false,
     logLevel: "silent",
     build: {
       outDir: path.join(dist, name),
-      emptyOutDir: true,
       target: "es2018",
       minify: "esbuild",
-      lib: { entry: source, formats: ["es"], fileName: () => "library.js" },
-      rolldownOptions: {
-        external: [/^react(?:\/.+)?$/, /^react-dom(?:\/.+)?$/],
-      },
+      lib: { entry: source, formats: ["es"], fileName: "library" },
+      ...bundlerOptions,
     },
   };
 }
@@ -32,6 +30,10 @@ function config(name) {
 async function consumeWithWebpack(name) {
   const directory = path.join(dist, name);
   const entry = path.join(directory, "entry.js");
+  fs.copyFileSync(
+    path.join(root, "src", "external.js"),
+    path.join(directory, "external.js"),
+  );
   fs.writeFileSync(
     entry,
     'import { Second } from "./library.js"; globalThis.Second = Second;\n',
@@ -39,7 +41,6 @@ async function consumeWithWebpack(name) {
   const compiler = webpack({
     mode: "production",
     target: "node",
-    devtool: false,
     entry,
     optimization: { minimize: false },
     output: { path: directory, filename: "main.cjs" },
@@ -56,8 +57,8 @@ async function consumeWithWebpack(name) {
   });
 }
 
-await buildWithRolldown(config("rolldown"));
-await buildWithRollup(config("rollup"));
+await buildWithRolldown(config("rolldown", { rolldownOptions: { external } }));
+await buildWithRollup(config("rollup", { rollupOptions: { external } }));
 
 const rolldown = await consumeWithWebpack("rolldown");
 const rollup = await consumeWithWebpack("rollup");

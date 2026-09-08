@@ -1,13 +1,13 @@
 # Minimal Rolldown-versus-Rollup reproduction
 
-The same 290-byte React source is built as an ESM library by:
+The same small ESM source is built as a library by:
 
 - Vite 8.1.5 with Rolldown 1.2.7
 - Vite 6.4.1 with Rollup 4.54.0
 
-Both builds target ES2018, externalize React and ReactDOM, and use esbuild
-minification. Webpack 5.74 then consumes each library with production module
-concatenation enabled.
+Both builds target ES2018, externalize the same one-function local module, and
+use esbuild minification. Webpack 5.74 then consumes each library together with
+that module, using production module concatenation.
 
 ## Run
 
@@ -24,26 +24,27 @@ Vite 6 / Rollup   -> Webpack 5.74: PASS
 ```
 
 Webpack compiles both generated libraries successfully. Evaluating the bundle
-made from Rolldown's output then throws because the generated alias for React's
-`forwardRef` import is undefined; the bundle made from Rollup's output runs.
+made from Rolldown's output then throws because the generated alias for the
+imported function is undefined; the bundle made from Rollup's output runs.
 
-The source combines the three ingredients needed to retain the problematic
-output shape: a private field lowered for ES2018, two `forwardRef` exports in
-one declaration, and a ReactDOM reference. Rolldown emits its imports before
-the lowered helpers and keeps the two components in a comma-chained `var`
-statement. Webpack rewrites the first imported `forwardRef` use but leaves the
-second alias unbound. Rollup orders and deconflicts the same symbols
-differently, so Webpack handles its output correctly.
+The source combines the ingredients needed to retain the problematic output
+shape: a private field lowered for ES2018 and two calls to an imported function
+in one declaration. Rolldown emits the import before the lowered helpers and
+keeps the calls in a comma-chained `var` statement. Webpack leaves the imported
+alias unbound while concatenating the modules. Rollup orders and deconflicts the
+same symbols differently, so Webpack handles its output correctly.
 
 Generated output is written to `dist/` and is intentionally not checked in.
 
 ## Impact
 
 Rolldown's output is valid ESM, so the incorrect transformation is ultimately
-an old Webpack bug. It is nevertheless a compatibility problem for libraries:
-library authors cannot require all consumers to upgrade the Webpack version
-embedded in their application framework. In practice, affected Next.js
-consumers cannot safely use library bundles with this output shape.
+an old Webpack bug. The minimized example uses a generic imported function, but
+the real failure was found in React library output using `forwardRef`. It is
+therefore a compatibility problem for libraries: authors cannot require all
+consumers to upgrade the Webpack version embedded in their application
+framework. In practice, affected Next.js consumers cannot safely use library
+bundles with this output shape.
 
 Emitting the Rollup-compatible symbol or declaration shape would avoid the
 downstream failure. Disabling Webpack's `concatenateModules` optimization also
@@ -55,10 +56,10 @@ The same failure has been observed with Rolldown 1.0.0, 1.0.3, 1.1.5, 1.2.5,
 
 ## Historical Next.js validation
 
-The Rolldown output was also consumed with the actual Webpack build selected by
-representative published Next.js releases. This is supporting evidence rather
-than part of the minimal reproduction, so the historical Next packages are not
-dependencies of this fixture.
+The original React library output was also consumed with the actual Webpack
+build selected by representative published Next.js releases. This is
+supporting evidence rather than part of the minimal reproduction, so the
+historical Next packages are not dependencies of this fixture.
 
 | Next.js | Default Webpack | Result |
 | --- | --- | --- |
