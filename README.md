@@ -3,6 +3,7 @@
 The same small, already-lowered ESM source is built directly by:
 
 - Rolldown 1.2.7 with `topLevelVar: true`
+- Rolldown 1.2.7 with `topLevelVar: false`
 - Rollup 4.54.0
 
 Both builds externalize the same one-function local module and run the same
@@ -25,14 +26,16 @@ pnpm test
 Expected output:
 
 ```text
-          Webpack 5.74  Webpack 5.90
-Rolldown  FAIL          PASS
-Rollup    PASS          PASS
+                              Webpack 5.74   Webpack 5.90
+Rolldown (topLevelVar: true)  FAIL          PASS
+Rolldown (topLevelVar: false) PASS          PASS
+Rollup                        PASS          PASS
 ```
 
 With Webpack 5.74, evaluating the bundle made from Rolldown's output then throws
 because the generated alias for the imported function is undefined; the bundle
-made from Rollup's output runs. Webpack 5.90 runs both outputs successfully.
+made from Rolldown with `topLevelVar: false` and the bundle made from Rollup's
+output both run. Webpack 5.90 runs all three outputs successfully.
 
 The source combines the ingredients needed to retain the problematic output
 shape: a lowered class-field helper and two calls to an imported function.
@@ -42,9 +45,9 @@ the imported alias unbound while concatenating the modules. Rollup preserves
 separate declaration kinds, so esbuild does not create that chain and Webpack
 handles its output correctly.
 
-The two library builds are emitted beside the tracked files in `fixture/` as
-ignored `rolldown-bundle.js` and `rollup-bundle.js` files. Webpack output is
-written to the ignored `dist/` directory.
+The three library builds are emitted in `fixture/` as `rolldown-bundle.js`,
+`rolldown-top-level-var-false-bundle.js`, and `rollup-bundle.js`. Webpack output
+is written to the corresponding directories under `dist/`.
 
 ## Impact
 

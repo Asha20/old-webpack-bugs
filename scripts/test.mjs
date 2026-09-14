@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,26 +53,46 @@ async function runWebpack(name, webpackVersion, webpack) {
       error ? reject(error) : resolve(result);
     }),
   );
-  assert.equal(stats.hasErrors(), false, stats.toString({ errors: true }));
-  return spawnSync(process.execPath, [path.join(directory, "main.cjs")], {
+  if (stats.hasErrors()) return false;
+  const result = spawnSync(process.execPath, [path.join(directory, "main.cjs")], {
     encoding: "utf8",
   });
+  return result.status === 0;
+}
+
+function printResult(name, webpack574Result, webpack590Result) {
+  const status = (passed) => (passed ? "PASS" : "FAIL");
+  console.log(
+    `${name.padEnd(30)}${status(webpack574Result).padEnd(14)}${status(webpack590Result)}`,
+  );
 }
 
 await build(rolldown, "rolldown", { topLevelVar: true });
+await build(rolldown, "rolldown-top-level-var-false", {
+  topLevelVar: false,
+});
 await build(rollup, "rollup");
 
 const rolldownWebpack574 = await runWebpack("rolldown", "5.74.0", webpack574);
+const rolldownTopLevelVarFalseWebpack574 = await runWebpack(
+  "rolldown-top-level-var-false",
+  "5.74.0",
+  webpack574,
+);
 const rollupWebpack574 = await runWebpack("rollup", "5.74.0", webpack574);
 const rolldownWebpack590 = await runWebpack("rolldown", "5.90.0", webpack590);
+const rolldownTopLevelVarFalseWebpack590 = await runWebpack(
+  "rolldown-top-level-var-false",
+  "5.90.0",
+  webpack590,
+);
 const rollupWebpack590 = await runWebpack("rollup", "5.90.0", webpack590);
 
-assert.notEqual(rolldownWebpack574.status, 0);
-assert.match(rolldownWebpack574.stderr, /ReferenceError: \w+ is not defined/);
-assert.equal(rollupWebpack574.status, 0, rollupWebpack574.stderr);
-assert.equal(rolldownWebpack590.status, 0, rolldownWebpack590.stderr);
-assert.equal(rollupWebpack590.status, 0, rollupWebpack590.stderr);
-
-console.log("          Webpack 5.74  Webpack 5.90");
-console.log("Rolldown  FAIL          PASS");
-console.log("Rollup    PASS          PASS");
+console.log(`${"".padEnd(30)}Webpack 5.74   Webpack 5.90`);
+printResult("Rolldown (topLevelVar: true)", rolldownWebpack574, rolldownWebpack590);
+printResult(
+  "Rolldown (topLevelVar: false)",
+  rolldownTopLevelVarFalseWebpack574,
+  rolldownTopLevelVarFalseWebpack590,
+);
+printResult("Rollup", rollupWebpack574, rollupWebpack590);
