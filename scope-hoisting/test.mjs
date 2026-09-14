@@ -8,7 +8,7 @@ import { rollup } from "rollup";
 import webpack574 from "webpack5-74-0";
 import webpack590 from "webpack5-90-0";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 const fixture = path.join(root, "fixture");
 const source = path.join(fixture, "index.js");
 const dist = path.join(root, "dist");

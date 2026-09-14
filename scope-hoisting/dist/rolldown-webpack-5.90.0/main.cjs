@@ -4,10 +4,10 @@ var __webpack_exports__ = {};
 
 // UNUSED EXPORTS: First, Second
 
-;// CONCATENATED MODULE: ./fixture/external.js
+;// CONCATENATED MODULE: ./scope-hoisting/fixture/external.js
 const wrap = (value) => value;
 
-;// CONCATENATED MODULE: ./fixture/rolldown-bundle.js
+;// CONCATENATED MODULE: ./scope-hoisting/fixture/rolldown-bundle.js
 
 function initialize(instance, storage2, value) {
 	storage2.set(instance, value);
